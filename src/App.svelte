@@ -1,5 +1,4 @@
 <script>
-	import { dndzone } from 'svelte-dnd-action';
 	import { resize } from '@svelte-put/resize';
 	import Component1 from './Component1.svelte';
 	import Component2 from './Component2.svelte';
@@ -13,18 +12,35 @@
 	const componentTypes = ['Component1', 'Component2', 'Component3'];
   
 	function addComponent() {
-	  components = [...components, { id: nextId++, type: selectedComponent }];
+	  components = [...components, { id: nextId++, type: selectedComponent, x: 0, y: 0 }];
 	}
   
 	function removeComponent(id) {
 	  components = components.filter(comp => comp.id !== id);
 	}
   
-	function handleDrop(event) {
-	  components = event.detail.items;
+	function startDrag(event, component) {
+	  if (mode === 'drag') {
+		const initialX = event.clientX - component.x;
+		const initialY = event.clientY - component.y;
+  
+		function onMouseMove(event) {
+		  component.x = event.clientX - initialX;
+		  component.y = event.clientY - initialY;
+		  components = [...components]; // Trigger reactivity
+		}
+  
+		function onMouseUp() {
+		  window.removeEventListener('mousemove', onMouseMove);
+		  window.removeEventListener('mouseup', onMouseUp);
+		}
+  
+		window.addEventListener('mousemove', onMouseMove);
+		window.addEventListener('mouseup', onMouseUp);
+	  }
 	}
-
-	$: console.log(mode)
+  
+	$: console.log(mode);
   </script>
   
   <div class="controls">
@@ -50,12 +66,16 @@
 	  Drag
 	</label>
   </div>
-
-
   
-  <div class="layout"  use:dndzone={{ items: components, flipDurationMs: 300 }} on:consider={handleDrop} on:finalize={handleDrop} class:drag-mode={mode === 'drag'}>
+  <div class="layout">
 	{#each components as component (component.id)}
-	  <div class="component-wrapper" class:drag-mode={mode === 'drag'} use:resize={mode === 'resize' ? { edges: { right: true, bottom: true }, minSize: { width: 100, height: 100 } } : undefined}>
+	  <div
+		class="component-wrapper"
+		class:drag-mode={mode === 'drag'}
+		style="top: {component.y}px; left: {component.x}px;"
+		use:resize={mode === 'resize' ? { edges: { right: true, bottom: true }, minSize: { width: 100, height: 100 } } : undefined}
+		on:mousedown={(event) => startDrag(event, component)}
+	  >
 		{#if component.type === 'Component1'}
 		  <Component1 id={component.id} />
 		{:else if component.type === 'Component2'}
@@ -102,33 +122,22 @@
 	}
   
 	.layout {
-	  display: grid;
-	  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-	  grid-template-rows: repeat(auto-fill, minmax(100px, 1fr));
-	  grid-auto-flow: dense;
-	  grid-auto-rows: 100px;
-	  grid-auto-columns: 200px;
-	  
-	  grid-gap: 10px;
+	  position: relative;
 	  width: 100%;
-	  height: 100%;
-	  flex-wrap: wrap;
-	  gap: 10px;
-	}
-  
-	.drag-mode .component-wrapper {
-	  cursor: move;
+	  height: 100vh;
+	  overflow: auto;
 	}
   
 	.component-wrapper {
-	  position: relative;
+	  position: absolute;
 	  display: flex;
 	  flex-direction: column;
 	  align-items: center;
 	  border: 1px dashed #ccc;
-	  margin: 10px;
 	  overflow: auto;
 	  resize: both;
+	  width: 200px;
+	  height: 100px;
 	}
   
 	.remove-btn {
@@ -145,6 +154,9 @@
 	.remove-btn:hover {
 	  background-color: #c82333;
 	}
+  
+	.drag-mode .component-wrapper {
+	  cursor: move;
+	}
   </style>
   
-
