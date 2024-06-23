@@ -102,7 +102,16 @@
 	}
   
 	.layout {
-	  display: flex;
+	  display: grid;
+	  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	  grid-template-rows: repeat(auto-fill, minmax(100px, 1fr));
+	  grid-auto-flow: dense;
+	  grid-auto-rows: 100px;
+	  grid-auto-columns: 200px;
+	  
+	  grid-gap: 10px;
+	  width: 100%;
+	  height: 100%;
 	  flex-wrap: wrap;
 	  gap: 10px;
 	}
